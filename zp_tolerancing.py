@@ -1,79 +1,127 @@
 from numpy import *
 import matplotlib.pyplot as plt
 
-'''
-Zone Plate Tolerancing Script -- Making the Figure 4.10 plot from Menz Thesis
-'''
-#######################################################
-arcsec = pi/180/3600
+from zp_design import define_zp as dzp
 
-'''
-Zone Plate Operating Characteristics -- all unit in meters
-'''
+class tol_allocation:
+    '''
+    This sets an error budget for zone plate operation. The Zone Plate (zp) is defined in the module zp_design, and is a class.
+    dz -- the focal depth (displacement/misalignment along the optical axis)
+    dr -- the average period error in dr. The Menz thesis calls this radial error.
+    offaxis_ang -- the angle between the zone plate normal and the chief ray, denoted as theta in Menz thesis.
+    sector_ang -- the sector angle, relevant only for partial ZPs of one sector
+    '''
+    def __init__(self,zp,dz,dr,offaxis_ang,sector_ang = 0.0):
+        self.zp = zp
+        self.dz = dz
+        self.dr = dr
+        self.offaxis_ang = offaxis_ang
+        self.sector_ang = sector_ang
 
-# Operating wavelength  
-lam = 1240./1487*10**-9    # 1240./1254*10**-9
-# Natural linewidth of the line (Al Ka = 0.49 eV, Mg Ka = 0.36 eV)
-dlam = 1240./(1487.)**2*0.49*10**-9
-# Focal length of operation
-f_op = 122.
+        self.__run_tol_assignment(self)
+    
+    '''
+    Series of functions computing the angular resolution contribution of each of the errors.
+    '''
+    # Computes the diffraction limit for zone plate resolution.
+    def compute_diffraction_limit_error(self):
+        self.res_err = 1.22*self.zp.wave*self.zp.f/(2*self.zp.r_max)
 
-# ZP Radii of interest
-rad = logspace(-3,2,1001)
+    # Computes the angular resolution error for defocus
+    def compute_defocus_error(self):
+        self.defocus_err = self.dz*self.zp.r_max/self.zp.f**2
 
-'''
-Tolerancing functions outlined in Table 4.4
-'''
-# Limiting resolution
-def res(r,lam = lam,f = f_op):
-    return 1.22*lam*f/(2*r)/arcsec
+    # Computes the chromatic aberration error.
+    def compute_chromatic_aberration_error(self):
+        self.chrom_err = (self.zp.dwave/self.zp.wave)*(self.zp.r_max/self.zp.f)
 
-# Focal depth
-def focal_depth(r,df,f = f_op):
-    return df*r/f**2/arcsec
+    # Computes the angular contribution from average period error.
+    def compute_radial_error(self):
+        self.rad_err = self.dr/self.zp.r_max
 
-# Chromatic aberration
-def chrom(r,lam = lam,dlam = dlam, f = f_op):
-    return dlam/lam*r/f/arcsec
+    # Errors due to spherical aberration.
+    def compute_spherical_error(self):
+        self.sph_err = 0.5*self.zp.r_max**3/self.zp.f**3
 
-# Radial offset from center
-def rad_error(r,dr):
-    return dr/r/arcsec
+    # Compute the error due to astigmatism and field curvature.
+    def compute_astigmatism_fc_error(self):
+        self.astig_fc_err = 0.5*(self.zp.r_max/self.zp.f)*(self.offaxis_ang**2)*sqrt(1 + sin(sector_ang)**2)
 
-# Spherical aberration 
-def spher_abb(r,f = f_op):
-    return 0.5*r**3/f**3/arcsec
+    # Computes the error due to coma.
+    def compute_coma_error(self):
+        self.coma_err = 0.25*(self.zp.r_max/self.zp.f)**2*self.offaxis_ang*sqrt(1 + 8*cos(sector_ang)**2)
 
-# Astigmatism and Field Curvature
-def astig_fc(r,theta,phi = 0.,f = f_op):
-    return 0.5*r/f*theta**2*sqrt(1 + sin(phi)**2)/arcsec
+    '''
+    Function that takes the assigned error budget, computes all of the relevant errors, then derives a angular resolution sum.
+    We also then compute an effective focal length error 
+    '''
+    def run_tol_assignment(self):
+        self.__compute_diffration_limit_error()
+        self.__compute_defocus_error()
+        self.__compute_chromatic_aberration_error()
+        self.__compute_radial_error()
+        self.__compute_spherical_error()
+        self.__compute_astigmatism_fc_error()
+        self.__compute_coma_error()
 
-# Coma
-def coma(r,theta,phi = 0.,f = f_op):
-    return 0.25*r**2/f**2*theta*sqrt(1 + 8*cos(phi)**2)
+        self.total_err = sqrt(self.res_err**2 + self.defocus_err**2 + self.chrom_err**2 + self.rad_err**2 + self.sph_err**2 + self.astig_fc_err**2 + self.coma_err**2)
 
-'''
-Making the Menz Fig. 4.10 plot for the equivalent ZP we're interested in.
-'''
+        # We next make the approximation that all of these errors behave like a defocus error when operated as a CZP, employing 
+        # the idea that an optical system is identical when traced in reverse, and approximating that focusing to a point and being collimated 
+        # from a point are roughly similar optical systems. We lastly compute that the source appears to at an effective distance of eff_source_dist, 
+        # based on the Taylor expansion of the thin lens equation. The derivation for this simple expression is captured in the digital lab notebook.
+        self.eff_f_err = self.zp.f*self_total_err
+        self.eff_source_dist = self.zp.f/self.total_err # Technically, this should have a minus sign in front of it.
+      
+    def print_err_contribs(self):
+        print 'Diffraction Limit: ' + "{:3.2f}".format(self.res_err/dzp.arcsec) + '\n'
+        print 'Defocus Error: ' + "{:3.2f}".format(self.defocus_err/dzp.arcsec) + '\n'
+        print 'Chromatic Aberration: ' + "{:3.2f}".format(self.chrom_err/dzp.arcsec) + '\n'
+        print 'Period Error: ' + "{:3.2f}".format(self.rad_err/dzp.arcsec) + '\n'
+        print 'Spherical Error: ' + "{:3.2f}".format(self.sph_err/dzp.arcsec) + '\n'
+        print 'Astigmatism/FC Error: ' + "{:3.2f}".format(self.astig_fc_err/dzp.arcsec) + '\n'
+        print 'Coma Error: ' + "{:3.2f}".format(self.coma_err/dzp.arcsec) + '\n'
 
-def plot_tols(rad):
+
+def test_plot():
+    f_op = 122.
+    max_radii = logspace(-3,2,1001)
+    zps = [dzp.zone_plate(f = f_op,max_radii[i],wave = dzp.al_k_wave,dwave = dzp.al_k_wave_width) for i in range(len(max_radii))]
+
     plt.ion()
     plt.figure(figsize = (10,10))
+    
+    tols_perfect = [tol_allocation(zps[i],0.0,0.0,0.0,0.0) for i in range(len(zps))]
+    tols_defocus_105 = [tol_allocation(zps[i],f_op*10**-5,0.0,0.0,0.0) for i in range(len(zps))]
+    tols_defocus_104 = [tol_allocation(zps[i],f_op*10**-4,0.0,0.0,0.0) for i in range(len(zps))] 
+    tols_offaxis_05deg = [tol_allocation(zps[i],0.0,0.0,0.5*pi/180,0.0) for i in range(len(zps))]
+    tols_offaxis_50deg = [tol_allocation(zps[i],0.0,0.0,5.0*pi/180,0.0) for i in range(len(zps))]
+    
+    
     # Plotting the limiting zone plate resolution.
-    plt.loglog(rad,res(rad),label = 'ZP Res.',color = 'r')
+    res = [tols_perfect[i].res_err for i in range(len(max_radii))]
+    plt.loglog(rad,res,label = 'ZP Res.',color = 'r')
     # Plotting the chromatic aberration expected for the wavelength of interest.
+    chrom = [tols_perfect[i].chrom_err for i in range(len(max_radii))]
     plt.loglog(rad,chrom(rad),label = 'Chromatic',color = 'y')
-    # Plotting the defocus expected for a fraction of the focal length
-    plt.loglog(rad,focal_depth(rad,10**-5*f_op),label = 'Def. 10^-5',color = 'g',linestyle = 'dashed')
-    plt.loglog(rad,focal_depth(rad,10**-4*f_op),label = 'Def. 10^-5',color = 'g',linestyle = 'dotted')
-    # Plotting the impact of astigmatism
-    plt.loglog(rad,astig_fc(rad,0.5*pi/180),label= 'Astig. 0.5 deg.',color = 'b',linestyle = 'dashed')
-    plt.loglog(rad,astig_fc(rad,5.0*pi/180),label= 'Astig. 5.0 deg.',color = 'b',linestyle = 'dotted')
-    # Plotting the impact of coma
-    plt.loglog(rad,coma(rad,0.5*pi/180),label = 'Coma 0.5 deg.',color = 'm',linestyle = 'dashed')
-    plt.loglog(rad,coma(rad,5.0*pi/180),label = 'Coma 5.0 deg.',color = 'm',linestyle = 'dotted')
-    # Plotting the impact of spherical aberration
-    plt.loglog(rad,spher_abb(rad),label = 'Sph. Ab.', color = 'k',linestyle = 'dotted')
+    # Plotting the defocus expected for a fraction of the focal length.
+    defocus_104 = [tols_defocus_104[i].defocus_err for i in range(len(max_radii))]
+    defocus_105 = [tols_defocus_105[i].defocus_err for i in range(len(max_radii))]
+    plt.loglog(rad,defocus_105,label = 'Def. 10^-5',color = 'g',linestyle = 'dashed')
+    plt.loglog(rad,defocus_104,label = 'Def. 10^-4',color = 'g',linestyle = 'dotted')
+    # Plotting the impact of astigmatism.
+    astig_fc_05 = [tols_offaxis_05deg[i].astig_fc_err for i in range(len(max_radii))]
+    astig_fc_50 = [tols_offaxis_50deg[i].astig_fc_err for i in range(len(max_radii))]
+    plt.loglog(rad,astig_fc_05,label= 'Astig. 0.5 deg.',color = 'b',linestyle = 'dashed')
+    plt.loglog(rad,astig_fc_50,label= 'Astig. 5.0 deg.',color = 'b',linestyle = 'dotted')
+    # Plotting the impact of coma.
+    coma_05 = [tols_offaxis_05deg[i].coma_err for i in range(len(max_radii))]
+    coma_50 = [tols_offaxis_50deg[i].coma_err for i in range(len(max_radii))]
+    plt.loglog(rad,coma_05,label = 'Coma 0.5 deg.',color = 'm',linestyle = 'dashed')
+    plt.loglog(rad,coma_50,label = 'Coma 5.0 deg.',color = 'm',linestyle = 'dotted')
+    # Plotting the impact of spherical aberration.
+    sph = [tols_perfect[i].sph_err for i in range(len(max_radii))]
+    plt.loglog(rad,sph,label = 'Sph. Ab.', color = 'k',linestyle = 'dotted')
     
     plt.xlabel('Zone Plate Radius (m)')
     plt.ylabel('Angular Resolution (arcseconds)')
