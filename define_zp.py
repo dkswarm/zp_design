@@ -9,8 +9,8 @@ hc = 1239.8 # in nm eV
 mg_k_wave = hc/1253.7/10**6    # Wavelength of Mg K alpha_1 emission in mm
 al_k_wave = hc/1486.7/10**6    # Wavelength of Al K alpha_1 emission in mm
 
-mg_k_wave_width = mg_k_wave**2/hc*0.36          # Assuming a natural line width of 0.36 eV
-al_k_wave_width = al_k_wave**2/hc*0.49          # Assuming a natural line width of 0.49 eV
+mg_k_wave_width = mg_k_wave**2/hc*0.36*10**6          # Assuming a natural line width of 0.36 eV
+al_k_wave_width = al_k_wave**2/hc*0.49*10**6          # Assuming a natural line width of 0.49 eV
 
 arcsec = np.pi/180/3600
 
