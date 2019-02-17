@@ -72,17 +72,17 @@ class tol_allocation:
         # the idea that an optical system is identical when traced in reverse, and approximating that focusing to a point and being collimated 
         # from a point are roughly similar optical systems. We lastly compute that the source appears to at an effective distance of eff_source_dist, 
         # based on the Taylor expansion of the thin lens equation. The derivation for this simple expression is captured in the digital lab notebook.
-        self.eff_f_err = self.zp.f*self.total_err
-        self.eff_source_dist = self.zp.f/self.total_err # Technically, this should have a minus sign in front of it.
+        self.eff_f_err = self.zp.f*self.total_err           # Inverting 
+        self.eff_source_dist = self.zp.r_max/self.total_err # Technically, this should have a minus sign in front of it.
       
     def print_err_contribs(self):
-        print 'Diffraction Limit: ' + "{:3.2f}".format(self.res_err/dzp.arcsec) + '\n'
-        print 'Defocus Error: ' + "{:3.2f}".format(self.defocus_err/dzp.arcsec) + '\n'
-        print 'Chromatic Aberration: ' + "{:3.2f}".format(self.chrom_err/dzp.arcsec) + '\n'
-        print 'Period Error: ' + "{:3.2f}".format(self.rad_err/dzp.arcsec) + '\n'
-        print 'Spherical Error: ' + "{:3.2f}".format(self.sph_err/dzp.arcsec) + '\n'
-        print 'Astigmatism/FC Error: ' + "{:3.2f}".format(self.astig_fc_err/dzp.arcsec) + '\n'
-        print 'Coma Error: ' + "{:3.2f}".format(self.coma_err/dzp.arcsec) + '\n'
+        print 'Diffraction Limit: ' + "{:3.2f}".format(self.res_err/dzp.arcsec) + ' arcsec'
+        print 'Defocus Error: ' + "{:3.2f}".format(self.defocus_err/dzp.arcsec) + ' arcsec'
+        print 'Chromatic Aberration: ' + "{:3.2f}".format(self.chrom_err/dzp.arcsec) + ' arcsec'
+        print 'Period Error: ' + "{:3.2f}".format(self.rad_err/dzp.arcsec) + ' arcsec'
+        print 'Spherical Error: ' + "{:3.2f}".format(self.sph_err/dzp.arcsec) + ' arcsec'
+        print 'Astigmatism/FC Error: ' + "{:3.2f}".format(self.astig_fc_err/dzp.arcsec) + ' arcsec'
+        print 'Coma Error: ' + "{:3.2f}".format(self.coma_err/dzp.arcsec) + ' arcsec'
 
     __run_tol_assignment = run_tol_assignment
     __compute_diffration_limit_error = compute_diffraction_limit_error

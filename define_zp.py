@@ -15,7 +15,7 @@ al_k_wave_width = al_k_wave**2/hc*0.49*10**6          # Assuming a natural line 
 arcsec = np.pi/180/3600
 
 class zone_plate:
-    def __init__(self, f, r_max, wave = mg_k_wave, dwave = 0.0,order = 1.):
+    def __init__(self, f, r_max, wave = mg_k_wave, dwave = mg_k_wave_width,order = 1.):
         self.f = f
         self.r_max = r_max
         self.wave = wave
