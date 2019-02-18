@@ -22,6 +22,9 @@ class zone_plate:
         self.dwave = dwave
         self.order = order
 
+        self.material = 'Si'        # Setting the 'opaque' material
+        self.sp_ratio = 0.5         # Setting the ratio of space (r_n+1 - r_n) to period (r_n+2 - r_n)
+
         self.N_zones = self.__compute_N_zones()
         self.r_first = self.__compute_r_first()
         self.dr_min = self.__compute_dr_min()
