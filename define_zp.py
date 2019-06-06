@@ -41,3 +41,23 @@ class zone_plate:
     __compute_N_zones = compute_N_zones
     __compute_dr_min = compute_dr_min
     __compute_r_first = compute_r_first
+
+    def trace_rays(self,ray_object,order):
+        '''
+        Defines the interaction with an ArcusRays-style ray object. Computes the 
+        diffraction through the zone_plate as a function of order without regard for
+        efficiency.
+        Assumes rays are on zone plate and that the ZP lies in the XY plane.
+        
+        '''
+
+        # Computing the relative orientation of the grating and the groove density at each ray point.
+        phis = np.arctan2(ray_object.y,ray_object.x) - np.pi/2
+        zone_num = np.ceil((ray_object.x**2 + ray_object.y**2)/self.r_first**2)
+        ds = self.r_first / np.sqrt(zone_num)
+
+        ray_object.vx = ray_object.vx + (order*ray_object.wave/ds)*np.sin(phis)
+        ray_object.vy = ray_object.vy - (order*ray_object.wave/ds)*np.cos(phis)
+        ray_object.vz = np.sqrt(1.0 - ray_object.vx**2 - ray_object.vy**2)
+
+        ray_object.zone_num = zone_num
