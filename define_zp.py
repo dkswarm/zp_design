@@ -15,9 +15,11 @@ al_k_wave_width = al_k_wave**2/hc*0.49*10**6          # Assuming a natural line 
 arcsec = np.pi/180/3600
 
 class zone_plate:
-    def __init__(self, f, r_max, wave = mg_k_wave, dwave = mg_k_wave_width,order = 1.):
+    def __init__(self, f, r_max, wave = mg_k_wave, dwave = mg_k_wave_width,order = 1.,r_min = 0., theta_seg = 2*np.pi):
         self.f = f
         self.r_max = r_max
+        self.r_min = r_min          # Nonzero for a segmented zone plate -- defines how big an area is covered by the ZP.
+        self.theta_seg = theta_seg  # Less than 2*pi for a segmented zone plate -- defines the angular coverage as measured from the +x axis.
         self.wave = wave
         self.dwave = dwave
         self.order = order

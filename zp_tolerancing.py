@@ -11,14 +11,16 @@ class tol_allocation:
     dz -- the focal depth (displacement/misalignment along the optical axis)
     dr -- the average period error in dr. The Menz thesis calls this radial error.
     offaxis_ang -- the angle between the zone plate normal and the chief ray, denoted as theta in Menz thesis.
-    sector_ang -- the sector angle, relevant only for partial ZPs of one sector
+    phi -- the mixing angle between being offset in x vs. y for a sector ZP. Doesn't matter for centered ZPs.
+    source_size -- the radial size of the X-ray source illuminating the ZP.
     '''
-    def __init__(self,zp,dz,dr,offaxis_ang,sector_ang = 0.0):
+    def __init__(self,zp,dz,dr,offaxis_ang,phi = 0.0,source_size = 0.0):
         self.zp = zp
         self.dz = dz
         self.dr = dr
         self.offaxis_ang = offaxis_ang
-        self.sector_ang = sector_ang
+        self.phi = phi
+        self.source_size = source_size
 
         self.__run_tol_assignment()
     
@@ -47,12 +49,15 @@ class tol_allocation:
 
     # Compute the error due to astigmatism and field curvature.
     def compute_astigmatism_fc_error(self):
-        self.astig_fc_err = 0.5*(self.zp.r_max/self.zp.f)*(self.offaxis_ang**2)*sqrt(1 + sin(self.sector_ang)**2)
+        self.astig_fc_err = 0.5*(self.zp.r_max/self.zp.f)*(self.offaxis_ang**2)*sqrt(1 + sin(self.phi)**2)
 
     # Computes the error due to coma.
     def compute_coma_error(self):
-        self.coma_err = 0.25*(self.zp.r_max/self.zp.f)**2*self.offaxis_ang*sqrt(1 + 8*cos(self.sector_ang)**2)
+        self.coma_err = 0.25*(self.zp.r_max/self.zp.f)**2*self.offaxis_ang*sqrt(1 + 8*cos(self.phi)**2)
 
+    # Computes the error due to the finite source size.
+    def compute_source_size_error(self):
+        self.source_size_err = self.source_size/self.zp.f
     '''
     Function that takes the assigned error budget, computes all of the relevant errors, then derives a angular resolution sum.
     We also then compute an effective focal length error 
@@ -65,8 +70,9 @@ class tol_allocation:
         self.__compute_spherical_error()
         self.__compute_astigmatism_fc_error()
         self.__compute_coma_error()
+        self.__compute_source_size_error()
 
-        self.total_err = sqrt(self.res_err**2 + self.defocus_err**2 + self.chrom_err**2 + self.rad_err**2 + self.sph_err**2 + self.astig_fc_err**2 + self.coma_err**2)
+        self.total_err = sqrt(self.res_err**2 + self.defocus_err**2 + self.chrom_err**2 + self.rad_err**2 + self.sph_err**2 + self.astig_fc_err**2 + self.coma_err**2 + self.source_size_err**2)
 
         # We next make the approximation that all of these errors behave like a defocus error when operated as a CZP, employing 
         # the idea that an optical system is identical when traced in reverse, and approximating that focusing to a point and being collimated 
@@ -83,6 +89,7 @@ class tol_allocation:
         print 'Spherical Error: ' + "{:3.2f}".format(self.sph_err/dzp.arcsec) + ' arcsec'
         print 'Astigmatism/FC Error: ' + "{:3.2f}".format(self.astig_fc_err/dzp.arcsec) + ' arcsec'
         print 'Coma Error: ' + "{:3.2f}".format(self.coma_err/dzp.arcsec) + ' arcsec'
+        print 'Source Size Error: ' + "{:3.2f}".format(self.source_size_err/dzp.arcsec) + ' arcsec'
 
     __run_tol_assignment = run_tol_assignment
     __compute_diffration_limit_error = compute_diffraction_limit_error
@@ -92,6 +99,7 @@ class tol_allocation:
     __compute_spherical_error = compute_spherical_error
     __compute_astigmatism_fc_error = compute_astigmatism_fc_error
     __compute_coma_error = compute_coma_error
+    __compute_source_size_error = compute_source_size_error
 
 def test_plot():
     # Units of distance are in mm, just like the zone definitions.
