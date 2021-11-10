@@ -10,6 +10,7 @@ import PyXFocus.sources as src
 import PyXFocus.transformations as trans
 import PyXFocus.surfaces as surf
 import PyXFocus.analyses as anal
+import PyXFocus.conicsolve as conic
 
 # For getting chromatic aberration implemented based on the actual line shape of Mg Kalpha.
 import zp_design.emission_line_sources as emlines
@@ -101,6 +102,8 @@ class wolterI:
         # The first number means that the ZP is 50 mm away from the Wolter-I optic
         # nominally.
         self.zp_wolter_sep = 50. + mirror_length + z_ps
+        self.primary_rmax = conic.primrad(self.z0 + self.z_ps + self.mirror_length,self.r0,self.z0)
+        self.primary_rmin = conic.primrad(self.z0 + self.z_ps,self.r0,self.z0)
 
 #############################################################################################
 # Defining the functions needed to raytrace a zone plate. 
@@ -236,7 +239,6 @@ def wolterItrace(rays,wolterIoptic,scatter = False):
     pyxrays = rays.yield_prays()
     # Displacing to the common Wolter-I focus.
     trans.transform(pyxrays,0.,-wolterIoptic.r0,-wolterIoptic.z0,0.,0.,0.)
-
     # Find which rays intersect with primary mirror surface.
     surf.wolterprimary(pyxrays, wolterIoptic.r0, wolterIoptic.z0)
     mask1 = logical_and(pyxrays[3] < wolterIoptic.z_ps + wolterIoptic.mirror_length + wolterIoptic.z0 ,pyxrays[3] > wolterIoptic.z_ps + wolterIoptic.z0)
@@ -255,9 +257,9 @@ def wolterItrace(rays,wolterIoptic,scatter = False):
 
     # Add scatter.
     if scatter is True:
-        pyxrays[4] = pyxrays[4] + np.random.normal(scale=1.5e-6, size=len(pyxrays[4]))
-        pyxrays[5] = pyxrays[5] + np.random.normal(scale=3.*5e-6, size=len(pyxrays[5]))
-        pyxrays[6] = -np.sqrt(1.-pyxrays[5]**2-pyxrays[4]**2)
+        pyxrays[4] = pyxrays[4] + random.normal(scale=1.5e-10, size=len(pyxrays[4]))
+        pyxrays[5] = pyxrays[5] + random.normal(scale=1.5e-6, size=len(pyxrays[5]))
+        pyxrays[6] = -sqrt(1.-pyxrays[5]**2-pyxrays[4]**2)
 
     # Propagating rays to this nominal focus location, computing the optimal focus location, 
     # and returning the computed rays.
