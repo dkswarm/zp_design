@@ -20,7 +20,7 @@ import zp_design.define_zp as dzp
 import zp_design.zp_tolerancing as zpt
 
 # Throwing in a zone plate so that we can test functionality.
-n_rays = 10**6
+n_rays = 10**5
 
 #############################################################################################
 # Defining the ray object class. This is identical to the ray class from arcusTrace.
@@ -71,7 +71,7 @@ class ray_obj:
             return [self.opd,self.x,self.y,self.z,self.vx,self.vy,self.vz,self.nx,self.ny,self.nz]
     
     def yield_object_indices(self, ind):
-        new_object = copy.deepcopy(self)
+        new_object = deepcopy(self)
         for key in self.__dict__.keys():
             new_object.__dict__[key] = self.__dict__[key][ind]
         return new_object
@@ -157,7 +157,7 @@ def illum_zp(xsource, ysource, zsource, rin, rout, tmin, tmax, num, source_size)
     ux = repeat(0., num)
     uy = repeat(0., num)
     uz = repeat(0., num)
-    opd = repeat(0., num)
+    opd = arange(num)
 
     return [opd, x, y, z, vx, vy, vz, ux, uy, uz]
 
@@ -233,12 +233,12 @@ def wolterItrace(rays,wolterIoptic,scatter = False):
     '''
     A raytracing function taking a ray object centered on a Wolter-I optic defined 
     by the WolterI class and tracing through this optic handling vignetting. 
+
+    Rays need to already be at the common Wolter-I focus.
     '''
-    # First, getting the PyXFocus rays out of the ray object.
-    
+    # First, getting the PyXFocus rays out of the ray object.    
     pyxrays = rays.yield_prays()
-    # Displacing to the common Wolter-I focus.
-    trans.transform(pyxrays,0.,-wolterIoptic.r0,-wolterIoptic.z0,0.,0.,0.)
+
     # Find which rays intersect with primary mirror surface.
     surf.wolterprimary(pyxrays, wolterIoptic.r0, wolterIoptic.z0)
     mask1 = logical_and(pyxrays[3] < wolterIoptic.z_ps + wolterIoptic.mirror_length + wolterIoptic.z0 ,pyxrays[3] > wolterIoptic.z_ps + wolterIoptic.z0)
@@ -248,12 +248,20 @@ def wolterItrace(rays,wolterIoptic,scatter = False):
     new_waves = rays.wave[mask1]
     trans.reflect(pyxrays)
 
+    # Creating a new ray object on the primary mirror.
+    primary_pyxrays = deepcopy(pyxrays)
+    primary_rays = ray_obj(primary_pyxrays,wave = new_waves)
+
     # Performing the same set of steps for the secondary mirror.
     surf.woltersecondary(pyxrays, wolterIoptic.r0, wolterIoptic.z0)
     mask2 = logical_and(pyxrays[3] > wolterIoptic.z0 - wolterIoptic.z_ss - wolterIoptic.mirror_length, wolterIoptic.z0, pyxrays[3] < wolterIoptic.z0 - wolterIoptic.z_ss)
     pyxrays = [x[mask2] for x in pyxrays]
     new_waves = new_waves[mask2]
     trans.reflect(pyxrays)
+
+    # Creating a new ray object on the primary mirror.
+    secondary_pyxrays = deepcopy(pyxrays)
+    secondary_rays = ray_obj(secondary_pyxrays,wave = new_waves)
 
     # Add scatter.
     if scatter is True:
@@ -265,30 +273,61 @@ def wolterItrace(rays,wolterIoptic,scatter = False):
     # and returning the computed rays.
     surf.flat(pyxrays)
     dz = anal.analyticImagePlane(pyxrays)
-    wolter_rays = ray_obj(pyxrays,wave = new_waves)
-    return wolter_rays,dz
+    pyxrays[3] = ones(len(pyxrays[3]))*dz   # Tracking the z-displacement relative to the nominal focus at zero.
+    focused_rays = ray_obj(pyxrays,wave = new_waves)
+    return primary_rays,secondary_rays,focused_rays,dz
 
-def zp_wolter_system_trace(tol_budget,wolterIoptic,wave = emlines.mgk_limited,order = 1.,source_size = 0.0):
+def zp_before_wolter_trace(tol_budget,wolterIoptic,wave = emlines.mgk_limited,order = 1., zp_wolter_sep = 152.5):
     '''
     Calculates the radius of curvature resulting from a CZP with a given tolerance budget.
     '''
     tols = [tol_budget.dz,tol_budget.offaxis_ang,tol_budget.phi,tol_budget.dr]
 
-    rays = trace_zp(tol_budget.zp,-tol_budget.zp.f,tols = tols,order = order,wave = wave,source_size = source_size)
-    zone_plate_rays = deepcopy(rays)
+    #############################
+    # Tracing the zone plate first.
+    rays = trace_zp(tol_budget.zp,-tol_budget.zp.f,tols = tols,order = order,wave = wave,source_size = tol_budget.source_size)
     pyxrays = rays.yield_prays()
 
-    # First steers the beam so as to be parallel to the chief ray. 
-    trans.transform(pyxrays,0.,0.,0.,-mean(pyxrays[5]),mean(pyxrays[4]),0.0)
+    #############################
+    # Handling the transforms necessary for the zone plate rays to interact with the WolterI optic correctly.
+
     # Next, translates the zone plate to be at the center of the ZP coordinates in XY, 
     # moves back to intersection point of the Wolter-I pair, and brings the rays there.
-    trans.transform(pyxrays,mean(pyxrays[1]),mean(pyxrays[2]),wolterIoptic.zp_wolter_sep, 0.,0.,0.)
-    surf.flat(pyxrays)
+    trans.transform(pyxrays,0.,0.,zp_wolter_sep, 0.,0.,0.)    # mean(pyxrays[1]),mean(pyxrays[2])
+    
     # Rotating the rays so that +z can point towards the mirrors and back towards the source.
-    trans.transform(pyxrays,0.,0.,0.,0.,pi,0.)
+    trans.transform(pyxrays,0.,0.,0.,0.,pi,pi/2)
+    # Moving everything into the common coodinate system of the Wolter-I optic.
+    trans.transform(pyxrays,0.,-wolterIoptic.r0,-wolterIoptic.z0,0.,0.,0.)
 
-    wolter_rays,dz = wolterItrace(rays,wolterIoptic)
-    return zone_plate_rays, wolter_rays, dz
+    # Putting rays on the zone plate into a new "zone_plate_rays" object so that everything is in the same coordinate system.
+    zp_rays = deepcopy(pyxrays)
+    zone_plate_rays = ray_obj(zp_rays,wave = rays.wave)
+
+    ##############################
+    # Next, adding an aperture mask to ensure that we're eliminating the zeroth order contribution. 
+    # This happens immediately after (100 mm) the collimating zone plate.
+    mask_czp_sep = 100.
+    mask_tolerance = 0.5
+    
+    # Moving forward to CZP, then back by the mask separation.
+    trans.transform(pyxrays,0.,0.,zp_wolter_sep + wolterIoptic.z0 - mask_czp_sep,0.,0.,0.)  
+    surf.flat(pyxrays)
+
+    # Calculating which rays make it through this mask.
+    mask_condition = logical_and(sqrt(rays.x**2 + rays.y**2) < wolterIoptic.primary_rmax + mask_tolerance, sqrt(rays.x**2 + rays.y**2) > wolterIoptic.primary_rmin - mask_tolerance)
+  
+    # Now moving the rays back to the WolterI coordinates, and the rays should now be on the mask. 
+    trans.transform(pyxrays,0.,0.,-zp_wolter_sep - wolterIoptic.z0 + mask_czp_sep,0.,0.,0.) 
+
+    # And finally, applying the cut condition so that we get out only rays that pass through the mask.
+    mask_rays = rays.yield_object_indices(ind = mask_condition)
+
+    #if sum(mask_condition)
+    ## Passing to the WolterI raytracing function, which handles everything else.
+    #primary_rays,secondary_rays,focused_rays,dz = wolterItrace(mask_rays,wolterIoptic)
+
+    return zone_plate_rays, mask_rays  # , primary_rays, secondary_rays, focused_rays, dz
 
 def compare_beamline_vs_zp(tol_budget,wolterIoptic,wave = emlines.mgk_limited,source_size = 0.0):
     # Doing the zp trace with all the other functions that we built.
