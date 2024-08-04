@@ -82,14 +82,14 @@ class tol_allocation:
         self.eff_source_dist = self.zp.r_max/self.total_err # Technically, this should have a minus sign in front of it.
       
     def print_err_contribs(self):
-        print 'Diffraction Limit: ' + "{:3.2f}".format(self.res_err/dzp.arcsec) + ' arcsec'
-        print 'Defocus Error: ' + "{:3.2f}".format(self.defocus_err/dzp.arcsec) + ' arcsec'
-        print 'Chromatic Aberration: ' + "{:3.2f}".format(self.chrom_err/dzp.arcsec) + ' arcsec'
-        print 'Period Error: ' + "{:3.2f}".format(self.rad_err/dzp.arcsec) + ' arcsec'
-        print 'Spherical Error: ' + "{:3.2f}".format(self.sph_err/dzp.arcsec) + ' arcsec'
-        print 'Astigmatism/FC Error: ' + "{:3.2f}".format(self.astig_fc_err/dzp.arcsec) + ' arcsec'
-        print 'Coma Error: ' + "{:3.2f}".format(self.coma_err/dzp.arcsec) + ' arcsec'
-        print 'Source Size Error: ' + "{:3.2f}".format(self.source_size_err/dzp.arcsec) + ' arcsec'
+        print('Diffraction Limit: ' + "{:3.2f}".format(self.res_err/dzp.arcsec) + ' arcsec')
+        print('Defocus Error: ' + "{:3.2f}".format(self.defocus_err/dzp.arcsec) + ' arcsec')
+        print('Chromatic Aberration: ' + "{:3.2f}".format(self.chrom_err/dzp.arcsec) + ' arcsec')
+        print('Period Error: ' + "{:3.2f}".format(self.rad_err/dzp.arcsec) + ' arcsec')
+        print('Spherical Error: ' + "{:3.2f}".format(self.sph_err/dzp.arcsec) + ' arcsec')
+        print('Astigmatism/FC Error: ' + "{:3.2f}".format(self.astig_fc_err/dzp.arcsec) + ' arcsec')
+        print('Coma Error: ' + "{:3.2f}".format(self.coma_err/dzp.arcsec) + ' arcsec')
+        print('Source Size Error: ' + "{:3.2f}".format(self.source_size_err/dzp.arcsec) + ' arcsec')
 
     __run_tol_assignment = run_tol_assignment
     __compute_diffration_limit_error = compute_diffraction_limit_error

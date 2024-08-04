@@ -350,5 +350,5 @@ def phi_sample(zp,wolterIoptic,dzs,offaxis_angs,phis = linspace(0,9./5*pi,10)):
                 zp_rays,beamline_rays,zp_wolter_rays,beamline_wolter_rays,zp_dz,beamline_zp = compare_beamline_vs_zp(czp_tols,wolterIoptic,wave = emlines.mgk_limited,source_size = 0.060)
                 zp_grid[i,j,k] = zp_dz
                 beam_grid[i,j,k] = beamline_zp
-                print dzs[i],offaxis_angs[j],phis[k]
+                print(dzs[i],offaxis_angs[j],phis[k])
     return zp_grid,beam_grid

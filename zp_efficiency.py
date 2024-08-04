@@ -7,7 +7,7 @@ from zp_design import define_zp as dzp
 
 import pdb
 
-ind_pointer = 'C:\Users\Casey\Software\python_repository\zp_design\cxro_lookup\z_index.npy'
+ind_pointer = 'C:\Users\swarm\Software\python_repository\zp_design\cxro_lookup\z_index.npy'
 
 '''
 Look up the index of refraction of the material.
