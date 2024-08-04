@@ -15,7 +15,8 @@ al_k_wave_width = al_k_wave**2/hc*0.49*10**6          # Assuming a natural line 
 arcsec = np.pi/180/3600
 
 class zone_plate:
-    def __init__(self, f, r_max, wave = mg_k_wave, dwave = mg_k_wave_width,order = 1.,r_min = 0., theta_seg = 2*np.pi):
+    def __init__(self, f, r_max, wave = mg_k_wave, dwave = mg_k_wave_width, order = 1., \
+                 r_min = 0., theta_seg = 2*np.pi, material='Si', sp_ratio=0.5):
         self.f = f
         self.r_max = r_max
         self.r_min = r_min          # Nonzero for a segmented zone plate -- defines how big an area is covered by the ZP.
@@ -24,8 +25,8 @@ class zone_plate:
         self.dwave = dwave
         self.order = order
 
-        self.material = 'Si'        # Setting the 'opaque' material
-        self.sp_ratio = 0.5         # Setting the ratio of space (r_n+1 - r_n) to period (r_n+2 - r_n)
+        self.material = material        # Setting the 'opaque' material
+        self.sp_ratio = sp_ratio        # Setting the ratio of space (r_n+1 - r_n) to period (r_n+2 - r_n)
 
         self.N_zones = self.__compute_N_zones()
         self.r_first = self.__compute_r_first()
