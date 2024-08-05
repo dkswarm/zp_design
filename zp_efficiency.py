@@ -7,7 +7,7 @@ from zp_design import define_zp as dzp
 
 import pdb
 
-ind_pointer = 'C:\Users\swarm\Software\python_repository\zp_design\cxro_lookup\z_index.npy'
+ind_pointer = '/Users/swarm/Analysis/zp_design/cxro_lookup/z_index.npy'
 
 '''
 Look up the index of refraction of the material.
@@ -36,6 +36,8 @@ def m_eff(z_h,zp,m):
     Z = mv.element(zp.material).atomic_number
     wave,k = zp.wave,2*np.pi/zp.wave
     delta,beta = compute_index(wave,Z)
+
+    # only works for m != 0. need to add equation 4.9 from menz thesis for m=0
 
     return ((np.sin(m*np.pi*ratio)/(m*np.pi))**2)*(1 + np.exp(-2*k*beta*z_h) - 2*np.exp(-k*beta*z_h)*np.cos(k*delta*z_h))
 
