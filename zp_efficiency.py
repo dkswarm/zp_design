@@ -3,7 +3,8 @@ from scipy.interpolate import interp1d
 from scipy.optimize import root
 import mendeleev as mv
 
-from zp_design import define_zp as dzp
+# from zp_design import define_zp as dzp 
+import define_zp as dzp
 
 import pdb
 
@@ -30,7 +31,7 @@ def m_eff(z_h,zp,m):
     Computes the diffraction efficiency of a zone plate 'zp' in order 'm' with opaque zone height 'z_h'.
     z_h -- zone height
     zp -- the zone plate
-    m - order
+    m - order, int or array of ints. This calculation requires m != 0
     '''
     ratio = zp.sp_ratio
     Z = mv.element(zp.material).atomic_number
@@ -40,6 +41,19 @@ def m_eff(z_h,zp,m):
     # only works for m != 0. need to add equation 4.9 from menz thesis for m=0
 
     return ((np.sin(m*np.pi*ratio)/(m*np.pi))**2)*(1 + np.exp(-2*k*beta*z_h) - 2*np.exp(-k*beta*z_h)*np.cos(k*delta*z_h))
+
+
+def m0_eff(z_h,zp,m=0):
+    if m != 0:
+        print('This fuction is only for zeroth-order efficiency. Use `m_eff()` instead.')
+        return
+    else:
+        ratio = zp.sp_ratio
+        Z = mv.element(zp.material).atomic_number
+        wave,k = zp.wave,2*np.pi/zp.wave
+        delta,beta = compute_index(wave,Z)
+
+    return (ratio**2 + (1 - ratio)**2*np.exp(-2*k*beta*z_h) + 2*ratio*(1 - ratio)*np.exp(-k*beta*z_h)*np.cos(k*delta*z_h))
 
 
 def compute_z_opt(zp,m):
