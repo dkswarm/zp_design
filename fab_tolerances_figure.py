@@ -12,12 +12,35 @@ efficiency = data[2,:,:]
 
 max_efficiency = np.max(efficiency)
 
+'''
+Intensity relative to maximum first order intensity
+'''
 plt.figure(figsize=(8,8))
 plt.pcolormesh(duty_cycle,zh_mm,efficiency/max_efficiency, cmap='binary')
 plt.colorbar(label='Intensity / Max Intensity')
 plt.contour(duty_cycle,zh_mm, efficiency/max_efficiency, levels=[0.8,0.9,0.95,0.99], \
             colors=['xkcd:bright red','xkcd:cyan', 'xkcd:bright green','xkcd:sun yellow'])
-plt.scatter(0.5, 2.15, marker='+', color='xkcd:bright magenta', s=100, label='APRA ZP')
+plt.scatter(0.5, 1.73, marker='+', color='xkcd:bright magenta', s=100, label='APRA ZP')
+
+plt.legend(fontsize=12)
+plt.xlim(0.3,0.7)
+plt.xlabel('Duty Cycle (s:P)', fontsize=18)
+plt.xticks(fontsize=12)
+plt.ylabel(r'Zone Height ($\mu m$)', fontsize=18)
+plt.yticks(fontsize=12)
+
+plt.savefig('fabricaton_efficiency_tolerances.pdf',dpi=2000)
+
+
+'''
+Zeroth order intensity relative to first order intensity
+'''
+plt.figure(figsize=(8,8))
+plt.pcolormesh(duty_cycle,zh_mm, data[3,:,:]/efficiency, cmap='binary')
+plt.colorbar(label='Intensity / Max Intensity')
+plt.contour(duty_cycle,zh_mm, data[3,:,:]/efficiency, levels=[0.8,0.9,0.95,0.99], \
+            colors=['xkcd:bright red','xkcd:cyan', 'xkcd:bright green','xkcd:sun yellow'])
+plt.scatter(0.5, 1.73, marker='+', color='xkcd:bright magenta', s=100, label='APRA ZP')
 
 plt.legend(fontsize=12)
 plt.xlim(0.3,0.7)

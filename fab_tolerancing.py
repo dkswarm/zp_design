@@ -12,23 +12,25 @@ r_max = 200 # maximum radius of zone plate
 r_min = 150 # minimum radius of zone plate (segmented)
 theta_seg = (24/180)*np.pi  # segmented zone plate arc in radians
 
-duty_cycles = np.linspace(0.3,0.8,51)
-zone_height_nominal = 2.15e-3
+duty_cycles = np.linspace(0.3,0.7,81)
+zone_height_nominal = 1.73e-3  # optimum zone height for Mg Ka 
 zone_heights = np.linspace(zone_height_nominal - 1e-3, zone_height_nominal + 1e-3, 201)
 
-efficiencies = np.zeros((duty_cycles.size, zone_heights.size))
+efficiencies_1 = np.zeros((duty_cycles.size, zone_heights.size)) # first order
+efficiencies_0 = np.zeros((duty_cycles.size, zone_heights.size)) # zeroth order
 
 print('Calculating efficiencies')
 
 for index, duty_cycle in enumerate(duty_cycles):
     print(duty_cycle)
     zp = dzp.zone_plate(f=f, r_max=r_max, r_min=r_min, theta_seg=theta_seg, sp_ratio=duty_cycle)
-    efficiencies[index,:] = zpe.m_eff(z_h=zone_heights, zp=zp, m=1)
+    efficiencies_1[index,:] = zpe.m_eff(z_h=zone_heights, zp=zp, m=1)
+    efficiencies_0[index,:] = zpe.m0_eff(z_h=zone_heights, zp=zp, m=0)
 
 print('Saving data')
 
 zhlayer, dclayer = np.meshgrid(zone_heights,duty_cycles)
 
 # The meshgrid swaps the indices from what we established in the efficiencies array
-np.save('fab_efficiency_tols.npy', np.asarray([dclayer,zhlayer,efficiencies]))
+np.save('fab_efficiency_tols.npy', np.asarray([dclayer,zhlayer,efficiencies_1,efficiencies_0]))
 print('Efficiencies saved.')
